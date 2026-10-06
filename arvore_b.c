@@ -41,8 +41,36 @@ int posicao(int chave, TNo *no) {
  * (cada nó deve ser lido no máximo uma vez)
  */
 TCliente *busca_no(FILE *arq, int d, int ptNo, int chave, int *pt_no, int *qtd_nos_lidos) {
-    //TODO: Implementar essa funcao
-    return NULL;
+    if (ptNo == -1) {
+        *pt_no = -1;
+        return NULL;
+    }
+
+    TNo *no = le_no_pos(arq, d, ptNo);
+    if (no == NULL) {
+        *pt_no = -1;
+        return NULL;
+    }
+    (*qtd_nos_lidos)++;
+
+    int pos = posicao(chave, no);
+
+    if (pos < no->m && no->clientes[pos]->cod_cliente == chave) {
+        *pt_no = ptNo;
+        TCliente *res = cliente(no->clientes[pos]->cod_cliente, no->clientes[pos]->nome);
+        libera_no(d, no);
+        return res;
+    }
+
+    int pt_filho = no->p[pos];
+    libera_no(d, no);
+
+    if (pt_filho == -1) {
+        *pt_no = -1;
+        return NULL;
+    }
+
+    return busca_no(arq, d, pt_filho, chave, pt_no, qtd_nos_lidos);
 }
 
 /*
@@ -54,10 +82,30 @@ TCliente *busca_no(FILE *arq, int d, int ptNo, int chave, int *pt_no, int *qtd_n
  * Uma árvore vazia (pont_raiz igual a -1) não tem nós para ler
  */
 TCliente *busca(int chave, char *nome_arquivo_metadados, char *nome_arquivo_dados, int d, int *pt_no, int *qtd_nos_lidos) {
-    //TODO: Implementar essa funcao
     *pt_no = -1;
     *qtd_nos_lidos = 0;
-    return NULL;
+
+    TMetadados *meta = le_arq_metadados(nome_arquivo_metadados);
+    if (meta == NULL) {
+        return NULL;
+    }
+
+    int pont_raiz = meta->pont_raiz;
+    free(meta);
+
+    if (pont_raiz == -1) {
+        return NULL;
+    }
+
+    FILE *arq_dados = fopen(nome_arquivo_dados, "rb");
+    if (arq_dados == NULL) {
+        return NULL;
+    }
+
+    TCliente *res = busca_no(arq_dados, d, pont_raiz, chave, pt_no, qtd_nos_lidos);
+    fclose(arq_dados);
+
+    return res;
 }
 
 int main () {
